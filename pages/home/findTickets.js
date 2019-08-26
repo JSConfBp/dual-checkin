@@ -49,6 +49,7 @@ export default (searchData, jsTickets, cssTickets) => {
 			registration_reference,
 			type,
 			release_title,
+			checked,
 		} = ticket;
 
 		return {
@@ -57,6 +58,7 @@ export default (searchData, jsTickets, cssTickets) => {
 			email,
 			registration_reference,
 			event: [{
+				checked,
 				id,
 				type,
 				release_title,

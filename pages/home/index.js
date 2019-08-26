@@ -22,6 +22,19 @@ const useStyles = makeStyles(theme => ({
   },
 }))
 
+const markAsChecked = (tickets, checkins) => {
+  checkins.map(c => {
+    tickets
+      .filter(t => (c.ticket_id === t.id))
+      .map(t => {
+        t.checked = true
+        return t
+      })
+  })
+
+  return tickets
+}
+
 const IndexPage = ({ jsTickets, cssTickets }) => {
   // console.log(jsTickets, cssTickets);
   const [result, setResult] = useState([])
@@ -59,15 +72,35 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
     }))
   }
 
-  const closeDialog = (event, type, data) => {
-    console.log(type, data);
-
+  const closeDialog = async (event, type, data) => {
     setDialogProps(Object.assign({}, dialogProps, {
       open: false,
       data: null
     }))
 
     if (type === 'checkin') {
+      const tickets = data.event.reduce((obj, event) => {
+        if (event.type === 'js') {
+          obj.jsTicketId = event.id
+        }
+        if (event.type === 'css') {
+          obj.cssTicketId = event.id
+        }
+        return obj
+      }, {})
+
+      const checkins = await fetch('/api/checkin', {
+        method: 'post',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(tickets),
+      }).then(res => res.json())
+
+      markAsChecked(jsTickets, checkins.js)
+      markAsChecked(cssTickets, checkins.css)
+
       reset()
     }
   }
@@ -105,13 +138,32 @@ const getTickets = async (id) => {
   return await data.json();
 }
 
+
+const getCheckins = async (id) => {
+  const data = await fetch(
+    `https://checkin.tito.io/checkin_lists/${id}/checkins`,
+    {
+      mode: 'no-cors',
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+      },
+    }
+  )
+  return await data.json();
+}
+
+
 IndexPage.getInitialProps = async () => {
   const jsTickets = await getTickets(jsCheckin)
   const cssTickets = await getTickets(cssCheckin)
 
+  const jsCheckins = await getCheckins(jsCheckin)
+  const cssCheckins = await getCheckins(cssCheckin)
+
   return {
-    jsTickets,
-    cssTickets
+    jsTickets: markAsChecked(jsTickets, jsCheckins),
+    cssTickets: markAsChecked(cssTickets, cssCheckins),
   }
 }
 

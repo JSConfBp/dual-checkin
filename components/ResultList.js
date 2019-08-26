@@ -36,6 +36,9 @@ const useStyles = makeStyles(theme => ({
     backgroundColor: '#000',
     color: '#fff',
     marginRight:theme.spacing(1),
+  },
+  checked: {
+    opacity: .3
   }
 }))
 
@@ -77,7 +80,7 @@ const ResultList = ({ list, onSelect }) => {
               <Chip
                 key={`${event.id}`}
                 size="small"
-                label={event.release_title}
+                label={`${event.release_title}${ event.checked ? ' - CHECKED IN' : '' }`}
                 className={classnames(classes.chip, classes[event.type])}
                 color={ event.type === 'js' ? "primary" : "secondary"}
               />

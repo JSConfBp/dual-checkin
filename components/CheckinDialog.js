@@ -46,6 +46,8 @@ export default ({
 }) => {
 	const classes = useStyles()
 
+	const disabled = data && data.event.find(e => e.checked)
+
 	return (<Dialog
 		open={open}
 		fullWidth={'sm'}
@@ -67,7 +69,7 @@ export default ({
 				{data.event.map(event => (
 					<Paper elevation={2} className={classnames(classes.ticket, classes[event.type])}>
 						<Typography variant="h5" component="h3">
-							{event.release_title}
+							{event.release_title} {event.checked ? ' - CHECKED IN' : ''}
 						</Typography>
 						<Typography component="p"  color="textSecondary">
 							{event.reference}
@@ -78,7 +80,9 @@ export default ({
 			</DialogContent>
 		</>)}
 		<DialogActions className={classes.actions}>
-			<Button size="large" variant="contained" onClick={e => handleClose(e, 'checkin', data)} className={classes.checkin}>
+			<Button
+				disabled={disabled}
+				size="large" variant="contained" onClick={e => handleClose(e, 'checkin', data)} className={classes.checkin}>
 				Check In
 			</Button>
 			<Button variant="text" onClick={handleClose} color="primary">
