@@ -3,8 +3,6 @@ const cssCheckin = process.env.CSS_CHECKIN_SLUG
 const jsCheckin = process.env.JS_CHECKIN_SLUG
 
 const responseHandler = async (res) => {
-	console.log(res.status);
-
 	if (res.status >= 400) {
 		throw new Error(`API request came back with ${res.status}`)
 	}
@@ -30,9 +28,6 @@ const getCheckins = async () => {
 
 const postCheckins = async (jsTicket, cssTicket) => {
 	const requests = []
-
-console.log(jsTicket, cssTicket);
-
 
 	if (jsTicket) {
 		requests.push(fetch(
@@ -73,6 +68,15 @@ console.log(jsTicket, cssTicket);
 }
 
 module.exports.get = async (req, res) => {
+
+	if (
+		process.env.ADMIN_TOKEN
+		&& process.env.ADMIN_TOKEN !== req.headers.token
+	) {
+		res.status(401).send()
+		return;
+	}
+
 	try {
 		const checkins = await getCheckins()
 		res.send(checkins)
@@ -82,6 +86,15 @@ module.exports.get = async (req, res) => {
 }
 
 module.exports.post = async (req, res) => {
+
+	if (
+		process.env.ADMIN_TOKEN
+		&& process.env.ADMIN_TOKEN !== req.headers.token
+	) {
+		res.status(401).send()
+		return;
+	}
+
 	try {
 		const {
 			jsTicketId = '',

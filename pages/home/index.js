@@ -4,6 +4,10 @@ import fetch from 'isomorphic-unfetch'
 import { makeStyles } from '@material-ui/core/styles'
 import CssBaseline from '@material-ui/core/CssBaseline'
 import Container from '@material-ui/core/Container'
+import ErrorIcon from '@material-ui/icons/Error';
+import Snackbar from '@material-ui/core/Snackbar';
+import SnackbarContent from '@material-ui/core/SnackbarContent';
+
 
 import Header from '../../components/Header'
 import Form from '../../components/Form'
@@ -36,7 +40,8 @@ const markAsChecked = (tickets, checkins) => {
 }
 
 const IndexPage = ({ jsTickets, cssTickets }) => {
-  // console.log(jsTickets, cssTickets);
+
+  const [ token, setToken ] = useState('');
   const [result, setResult] = useState([])
   const [searchData, updateSearchData] = useState({
     first_name: '',
@@ -48,6 +53,21 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
     open: false,
     data: null
   })
+  const [ errorNotification, setErrorNotification ] = useState(false);
+
+	const closeErrorNotification = () => {
+		setErrorNotification(false)
+	}
+
+	useEffect(() => {
+		const rawToken = (new URL(window.location.href)).searchParams.get('token')
+
+		if (rawToken) {
+			setToken(rawToken)
+		}
+
+		return () => {}
+	})
 
   const reset = () => {
     updateSearchData({
@@ -89,14 +109,22 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
         return obj
       }, {})
 
-      const checkins = await fetch('/api/checkin', {
+      const xhr = await fetch('/api/checkin', {
         method: 'post',
         headers: {
+          token,
           'Content-Type': 'application/json',
           Accept: 'application/json',
         },
         body: JSON.stringify(tickets),
-      }).then(res => res.json())
+      })
+
+      if (xhr.status >= 400) {
+        setErrorNotification(true)
+        return;
+      }
+
+      const checkins = await xhr.json()
 
       markAsChecked(jsTickets, checkins.js)
       markAsChecked(cssTickets, checkins.css)
@@ -120,6 +148,25 @@ const IndexPage = ({ jsTickets, cssTickets }) => {
         />
       </Container>
       <CheckinDialog {...dialogProps} handleClose={(...args) => closeDialog(...args)} />
+      <Snackbar
+        anchorOrigin={{
+          vertical: 'top',
+          horizontal: 'center',
+        }}
+        open={ errorNotification }
+        autoHideDuration={5000}
+        onClose={closeErrorNotification}
+      >
+		<SnackbarContent
+			aria-describedby="client-snackbar"
+			message={
+          <span id="client-snackbar">
+            <ErrorIcon />
+            Could not save check in!
+          </span>
+        }
+    	/>
+	  </Snackbar>
     </>
   )
 }
@@ -154,7 +201,17 @@ const getCheckins = async (id) => {
 }
 
 
-IndexPage.getInitialProps = async () => {
+IndexPage.getInitialProps = async ({req, res}) => {
+
+  if (
+		!process.browser
+		&& process.env.ADMIN_TOKEN
+		&& process.env.ADMIN_TOKEN !== req.query.token
+	) {
+		res.status(401).send()
+		return
+  }
+
   const jsTickets = await getTickets(jsCheckin)
   const cssTickets = await getTickets(cssCheckin)
 
